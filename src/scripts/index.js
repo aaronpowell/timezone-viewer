@@ -1,4 +1,5 @@
-(async () => {
+(() => {
+  "use strict";
   const { moment } = window;
 
   const zoneNames = moment.tz.names();
