@@ -1,4 +1,6 @@
 "use strict";
+import { formatTimeZone } from "./utils.js";
+
 const createPicker = (moment, document) => {
   const zoneNames = moment.tz.names();
   const zoneInfos = zoneNames.map((name) => moment.tz.zone(name));
@@ -34,7 +36,7 @@ const createPicker = (moment, document) => {
     const group = groups[groupKey];
     optGroup.setAttribute(
       "label",
-      `UTC ${group[0].offsetHours > 0 ? "+" : ""}${group[0].offsetHours}`
+      `UTC ${formatTimeZone(group[0].offsetHours)}`
     );
     group
       .sort((a, b) => (a.name > b.name ? 1 : -1))
