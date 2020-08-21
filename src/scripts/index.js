@@ -18,8 +18,9 @@
   };
 
   const displayTimeZone = (zoneInfo) => {
-    const p = document.createElement("p");
-    p.innerHTML = `${zoneInfo.name} - UTC ${formatTimeZone(
+    const timeZoneContainer = document.createElement("div");
+    timeZoneContainer.classList.add("timezone-container");
+    timeZoneContainer.innerHTML = `${zoneInfo.name} - UTC ${formatTimeZone(
       zoneInfo.offsetHours
     )}`;
 
@@ -38,9 +39,9 @@
       await refreshTimeZoneList();
     });
 
-    p.appendChild(clear);
+    timeZoneContainer.appendChild(clear);
 
-    document.getElementById("main").appendChild(p);
+    document.getElementById("main").appendChild(timeZoneContainer);
   };
 
   const addTimeZoneButton = document.getElementById("addTimeZone");
