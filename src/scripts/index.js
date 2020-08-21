@@ -8,17 +8,24 @@
   const refreshTimeZoneList = async () => {
     const zones = await db.getItem("zones", []);
 
+    const main = document.getElementById("main");
+    const children = Array.prototype.slice.call(main.childNodes);
+    for (const child of children) {
+      main.removeChild(child);
+    }
+
     zones.map(displayTimeZone);
   };
 
-  const displayTimeZone = (zoneInfo) => {
+  const displayTimeZone = (zoneInfo, i) => {
     const p = document.createElement("p");
-    p.innerHTML = `${zoneInfo.name} - UTC ${formatTimeZone(
+    p.innerHTML = `${i} - ${zoneInfo.name} - UTC ${formatTimeZone(
       zoneInfo.offsetHours
     )}`;
 
     const clear = document.createElement("span");
     clear.innerHTML = "❌";
+    clear.classList.add("remove");
     clear.addEventListener("click", async () => {
       const knownZones = await db.getItem("zones");
 
@@ -28,6 +35,7 @@
         .concat(knownZones.splice(index + 1));
 
       await db.setItem("zones", newZones);
+      await refreshTimeZoneList();
     });
 
     p.appendChild(clear);
