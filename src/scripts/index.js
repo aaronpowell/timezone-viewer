@@ -49,6 +49,10 @@
     select.addEventListener("zoneSelected", async ({ zoneInfo }) => {
       const knownZones = await db.getItem("zones", []);
 
+      if (knownZones.find((tz) => tz.name === zoneInfo.name)) {
+        return;
+      }
+
       await db.setItem("zones", knownZones.concat([zoneInfo]));
 
       await refreshTimeZoneList();
