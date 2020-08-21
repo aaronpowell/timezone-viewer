@@ -7,4 +7,15 @@
 
 #main .timezone-container {
   flex: 1;
+  text-align: center;
+}
+
+#main .timezone-container .remove {
+  cursor: pointer;
+  display: none;
+}
+
+#main .timezone-container .timezone-info:hover .remove {
+  cursor: pointer;
+  display: initial;
 }
