@@ -5,6 +5,12 @@
   const { formatTimeZone, shallowEqual } = await import("./utils.js");
   const db = await import("./db.js");
 
+  const refreshTimeZoneList = async () => {
+    const zones = await db.getItem("zones", []);
+
+    zones.map(displayTimeZone);
+  };
+
   const displayTimeZone = (zoneInfo) => {
     const p = document.createElement("p");
     p.innerHTML = `${zoneInfo.name} - UTC ${formatTimeZone(
@@ -33,16 +39,18 @@
   addTimeZoneButton.addEventListener("click", () => {
     const select = createPicker(window.moment, document);
     select.addEventListener("zoneSelected", async ({ zoneInfo }) => {
-      displayTimeZone(zoneInfo);
       const knownZones = await db.getItem("zones", []);
 
       await db.setItem("zones", knownZones.concat([zoneInfo]));
+
+      await refreshTimeZoneList();
+
+      const header = document.querySelector("header");
+      header.removeChild(select);
     });
 
-    document.getElementById("main").appendChild(select);
+    document.querySelector("header").appendChild(select);
   });
 
-  const knownZones = await db.getItem("zones", []);
-
-  knownZones.map(displayTimeZone);
+  await refreshTimeZoneList();
 })();
