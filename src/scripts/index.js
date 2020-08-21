@@ -17,9 +17,9 @@
     zones.map(displayTimeZone);
   };
 
-  const displayTimeZone = (zoneInfo, i) => {
+  const displayTimeZone = (zoneInfo) => {
     const p = document.createElement("p");
-    p.innerHTML = `${i} - ${zoneInfo.name} - UTC ${formatTimeZone(
+    p.innerHTML = `${zoneInfo.name} - UTC ${formatTimeZone(
       zoneInfo.offsetHours
     )}`;
 
