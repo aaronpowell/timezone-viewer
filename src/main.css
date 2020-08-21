@@ -4,3 +4,7 @@
   flex-direction: row;
   flex-wrap: nowrap;
 }
+
+#main .timezone-container {
+  flex: 1;
+}
