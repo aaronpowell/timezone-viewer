@@ -20,7 +20,6 @@ const createPicker = (moment, document) => {
         offsetHours,
       };
     })
-    .sort((a, b) => (a.offset > b.offset ? 1 : -1))
     .reduce((groups, info) => {
       if (!groups[info.offset]) {
         groups[info.offset] = [];
@@ -31,28 +30,31 @@ const createPicker = (moment, document) => {
       return groups;
     }, {});
 
-  Object.keys(groups).map((groupKey) => {
-    const optGroup = document.createElement("optgroup");
-    const group = groups[groupKey];
-    optGroup.setAttribute(
-      "label",
-      `UTC ${formatTimeZone(group[0].offsetHours)}`
-    );
-    group
-      .sort((a, b) => (a.name > b.name ? 1 : -1))
-      .map((info) => {
-        const option = document.createElement("option");
-        option.dataset.zoneInfo = JSON.stringify(info);
-        option.innerHTML = info.name;
+  Object.keys(groups)
+    .map(Number)
+    .sort((a, b) => (a > b ? 1 : -1))
+    .map((groupKey) => {
+      const optGroup = document.createElement("optgroup");
+      const group = groups[groupKey];
+      optGroup.setAttribute(
+        "label",
+        `UTC ${formatTimeZone(group[0].offsetHours)}`
+      );
+      group
+        .sort((a, b) => (a.name > b.name ? 1 : -1))
+        .map((info) => {
+          const option = document.createElement("option");
+          option.dataset.zoneInfo = JSON.stringify(info);
+          option.innerHTML = info.name;
 
-        if (info.name === guess) {
-          option.selected = true;
-        }
+          if (info.name === guess) {
+            option.selected = true;
+          }
 
-        optGroup.appendChild(option);
-      });
-    select.appendChild(optGroup);
-  });
+          optGroup.appendChild(option);
+        });
+      select.appendChild(optGroup);
+    });
 
   select.addEventListener("change", ({ target }) => {
     select.dispatchEvent(

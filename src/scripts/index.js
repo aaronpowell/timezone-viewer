@@ -6,40 +6,66 @@
   const db = await import("./db.js");
 
   const refreshTimeZoneList = async () => {
-    const zones = await db.getItem("zones", []);
-
     const main = document.getElementById("main");
     const children = Array.prototype.slice.call(main.childNodes);
     for (const child of children) {
       main.removeChild(child);
     }
 
-    zones.map(displayTimeZone);
+    const zones = await db.getItem("zones", []);
+
+    const zoneGroups = zones.reduce((groups, info) => {
+      if (!groups[info.offsetHours]) {
+        groups[info.offsetHours] = [];
+      }
+
+      groups[info.offsetHours].push(info);
+
+      return groups;
+    }, {});
+
+    console.log(zoneGroups);
+
+    Object.keys(zoneGroups)
+      .map(Number)
+      .sort((a, b) => (a > b ? 1 : -1))
+      .map((key) => {
+        const zoneGroup = zoneGroups[key];
+
+        displayTimeZone(key, zoneGroup);
+      });
   };
 
-  const displayTimeZone = (zoneInfo) => {
+  const displayTimeZone = (offset, zoneGroup) => {
     const timeZoneContainer = document.createElement("div");
     timeZoneContainer.classList.add("timezone-container");
-    timeZoneContainer.innerHTML = `${zoneInfo.name} - UTC ${formatTimeZone(
-      zoneInfo.offsetHours
-    )}`;
 
-    const clear = document.createElement("span");
-    clear.innerHTML = "❌";
-    clear.classList.add("remove");
-    clear.addEventListener("click", async () => {
-      const knownZones = await db.getItem("zones");
+    for (const zoneInfo of zoneGroup) {
+      const zoneInfoContainer = document.createElement("div");
+      zoneInfoContainer.innerHTML = zoneInfo.name;
 
-      const index = knownZones.findIndex((tz) => shallowEqual(zoneInfo, tz));
-      const newZones = knownZones
-        .slice(0, index)
-        .concat(knownZones.splice(index + 1));
+      const clear = document.createElement("span");
+      clear.innerHTML = "❌";
+      clear.classList.add("remove");
+      clear.addEventListener("click", async () => {
+        const knownZones = await db.getItem("zones");
 
-      await db.setItem("zones", newZones);
-      await refreshTimeZoneList();
-    });
+        const index = knownZones.findIndex((tz) => shallowEqual(zoneInfo, tz));
+        const newZones = knownZones
+          .slice(0, index)
+          .concat(knownZones.splice(index + 1));
 
-    timeZoneContainer.appendChild(clear);
+        await db.setItem("zones", newZones);
+        await refreshTimeZoneList();
+      });
+
+      zoneInfoContainer.appendChild(clear);
+      timeZoneContainer.appendChild(zoneInfoContainer);
+    }
+
+    const timeZoneOffset = document.createElement("div");
+    timeZoneOffset.innerHTML = formatTimeZone(offset);
+    timeZoneContainer.appendChild(timeZoneOffset);
 
     document.getElementById("main").appendChild(timeZoneContainer);
   };
