@@ -65,7 +65,7 @@ const displayTimeZone = (offset, zoneGroup, moment) => {
         .concat(knownZones.splice(index + 1));
 
       await db.setItem("zones", newZones);
-      await refreshTimeZoneList();
+      globalThis.dispatchEvent(new TimeZoneRefreshEvent());
     });
 
     zoneInfoContainer.appendChild(clear);
@@ -78,5 +78,11 @@ const displayTimeZone = (offset, zoneGroup, moment) => {
 
   return timeZoneContainer;
 };
+
+class TimeZoneRefreshEvent extends Event {
+  constructor() {
+    super("timezone-refresh");
+  }
+}
 
 export { refreshTimeZoneList };

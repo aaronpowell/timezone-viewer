@@ -49,4 +49,6 @@
   setInterval(() => {
     window.dispatchEvent(new TimeUpdatedEvent(Date.now()));
   }, 1000);
+
+  globalThis.addEventListener("timezone-refresh", refreshTimeZoneListToDOM);
 })();
