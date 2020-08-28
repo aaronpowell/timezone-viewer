@@ -6,6 +6,7 @@ const createPicker = (moment, document) => {
   const zoneInfos = zoneNames.map((name) => moment.tz.zone(name));
 
   const select = document.createElement("select");
+  select.setAttribute("id", "timezone-picker");
 
   const guess = moment.tz.guess();
 

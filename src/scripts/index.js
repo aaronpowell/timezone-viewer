@@ -13,7 +13,7 @@
   );
 
   const addTimeZoneButton = document.getElementById("addTimeZone");
-  addTimeZoneButton.addEventListener("click", () => {
+  const displayPicker = () => {
     const tzPicker = createPicker(window.moment, document);
     tzPicker.addEventListener("zoneSelected", async ({ zoneInfo }) => {
       const knownZones = await db.getItem("zones", []);
@@ -31,7 +31,18 @@
     });
 
     document.querySelector("header").appendChild(tzPicker);
-  });
+    addTimeZoneButton.removeEventListener("click", displayPicker);
+    addTimeZoneButton.addEventListener("click", removePicker);
+    addTimeZoneButton.innerHTML = "Remove Timezone Picker";
+  };
+  const removePicker = () => {
+    const tzPicker = document.getElementById("timezone-picker");
+    tzPicker.parentElement.removeChild(tzPicker);
+    addTimeZoneButton.removeEventListener("click", removePicker);
+    addTimeZoneButton.addEventListener("click", displayPicker);
+    addTimeZoneButton.innerHTML = "Add a timezone";
+  };
+  addTimeZoneButton.addEventListener("click", displayPicker);
 
   await refreshTimeZoneListToDOM();
 
