@@ -40,3 +40,7 @@ header {
   cursor: pointer;
   display: initial;
 }
+
+#main .timezone-container time wc-blink {
+  display: inline-block;
+}

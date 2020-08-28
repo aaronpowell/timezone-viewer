@@ -3,8 +3,14 @@
 
   const { createPicker } = await import("./timezone-picker.js");
   const db = await import("./db.js");
-  const { refreshTimeZoneList } = await import("./timezones-display.js");
-  const { TimeUpdatedEvent } = await import("./timeUpdatedEvent.js");
+  const { refreshTimeZoneList, TimeZoneRefreshEvent } = await import(
+    "./timezones-display.js"
+  );
+  const {
+    TimeUpdatedEvent,
+    StopTimeUpdateEvent,
+    StartTimeUpdateEvent,
+  } = await import("./customEvents.js");
 
   const refreshTimeZoneListToDOM = refreshTimeZoneList.bind(
     null,
@@ -46,9 +52,42 @@
 
   await refreshTimeZoneListToDOM();
 
-  setInterval(() => {
-    window.dispatchEvent(new TimeUpdatedEvent(Date.now()));
-  }, 1000);
+  const startTime = () =>
+    setInterval(() => {
+      let time = window.moment(Date.now());
 
-  globalThis.addEventListener("timezone-refresh", refreshTimeZoneListToDOM);
+      if (customHour !== -1) {
+        time.set("hour", customHour);
+      }
+
+      if (customMinutes !== -1) {
+        time.set("minute", customMinutes);
+      }
+
+      globalThis.dispatchEvent(new TimeUpdatedEvent(time));
+    }, 1000);
+
+  let intervalId;
+  let customHour = -1;
+  let customMinutes = -1;
+
+  globalThis.addEventListener(StopTimeUpdateEvent.eventId, () => {
+    clearInterval(intervalId);
+  });
+
+  globalThis.addEventListener(
+    StartTimeUpdateEvent.eventId,
+    ({ changedMinute, changedHour }) => {
+      customHour = changedHour;
+      customMinutes = changedMinute;
+      intervalId = startTime();
+    }
+  );
+
+  globalThis.addEventListener(
+    TimeZoneRefreshEvent.eventId,
+    refreshTimeZoneListToDOM
+  );
+
+  globalThis.dispatchEvent(new StartTimeUpdateEvent());
 })();

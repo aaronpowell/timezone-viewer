@@ -1,5 +1,11 @@
 import { formatTimeZone, shallowEqual } from "./utils.js";
 import * as db from "./db.js";
+import {
+  StartTimeUpdateEvent,
+  StopTimeUpdateEvent,
+  TimeUpdatedEvent,
+} from "./customEvents.js";
+import "https://cdn.jsdelivr.net/gh/vanillawc/wc-blink@1/index.js";
 
 const refreshTimeZoneList = async (main, moment) => {
   const children = Array.prototype.slice.call(main.childNodes);
@@ -37,16 +43,52 @@ const displayTimeZone = (offset, zoneGroup, moment) => {
   const timeContainer = document.createElement("h1");
   const time = document.createElement("time");
   const now = moment.utc().tz(zoneGroup[0].name);
-  time.innerHTML = now.format("HH:mm");
+  const h = document.createElement("span");
+  h.setAttribute("contenteditable", true);
+  h.innerHTML = now.format("HH");
+  time.appendChild(h);
+  const separator = document.createElement("wc-blink");
+  separator.innerHTML = ":";
+  separator.classList.add("blink");
+  time.appendChild(separator);
+  const m = document.createElement("span");
+  m.setAttribute("contenteditable", true);
+  m.innerHTML = now.format("mm");
+  time.appendChild(m);
   time.setAttribute("datetime", now.format());
+  [h, m].forEach((e) =>
+    e.addEventListener("focus", () => {
+      globalThis.dispatchEvent(new StopTimeUpdateEvent());
+    })
+  );
+  let changedHour = false;
+  let changedMinute = false;
+  h.addEventListener("input", () => (changedHour = true));
+  m.addEventListener("input", () => (changedMinute = true));
+  [h, m].forEach((e) =>
+    e.addEventListener("blur", () => {
+      globalThis.dispatchEvent(
+        new StartTimeUpdateEvent(
+          changedHour ? parseInt(h.innerHTML, 10) : -1,
+          changedMinute ? parseInt(m.innerHTML, 10) : -1
+        )
+      );
+    })
+  );
   timeContainer.appendChild(time);
   timeZoneContainer.appendChild(timeContainer);
 
-  globalThis.addEventListener("timeUpdated", (e) => {
+  globalThis.addEventListener(TimeUpdatedEvent.eventId, (e) => {
     const now = moment(e.now).utc().tz(zoneGroup[0].name);
-    time.innerHTML = now.format("HH:mm");
+    h.innerHTML = now.format("HH");
+    m.innerHTML = now.format("mm");
     time.setAttribute("datetime", now.format());
   });
+
+  const dateElement = document.createElement("time");
+  dateElement.innerHTML = now.format("<br />dddd Do MMM yyyy");
+  dateElement.setAttribute("time", now.format());
+  timeContainer.appendChild(dateElement);
 
   for (const zoneInfo of zoneGroup) {
     const zoneInfoContainer = document.createElement("div");
@@ -80,9 +122,12 @@ const displayTimeZone = (offset, zoneGroup, moment) => {
 };
 
 class TimeZoneRefreshEvent extends Event {
+  static get eventId() {
+    return "timeZoneRefresh";
+  }
   constructor() {
-    super("timezone-refresh");
+    super(TimeZoneRefreshEvent.eventId);
   }
 }
 
-export { refreshTimeZoneList };
+export { refreshTimeZoneList, TimeZoneRefreshEvent };
