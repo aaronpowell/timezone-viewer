@@ -1,8 +1,23 @@
+:root {
+  --headerHeight: 10vh;
+  --mainHeight: calc(100vh - var(--headerHeight));
+}
+
+body {
+  margin: 0;
+}
+
+header {
+  min-height: var(--headerHeight);
+}
+
 #main {
   display: flex;
 
   flex-direction: row;
   flex-wrap: nowrap;
+  min-height: var(--mainHeight);
+  align-items: center;
 }
 
 #main .timezone-container {
