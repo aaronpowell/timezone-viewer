@@ -36,6 +36,66 @@ const refreshTimeZoneList = async (main, moment) => {
     .forEach((el) => main.appendChild(el));
 };
 
+const makeTime = (moment, zoneGroup, now) => {
+  const timeContainer = document.createElement("h1");
+  const time = document.createElement("time");
+  timeContainer.appendChild(time);
+
+  const hours = document.createElement("span");
+  hours.setAttribute("contenteditable", true);
+  hours.innerHTML = now.format("HH");
+  time.appendChild(hours);
+
+  const separator = document.createElement("wc-blink");
+  separator.innerHTML = ":";
+  time.appendChild(separator);
+
+  const minutes = document.createElement("span");
+  minutes.setAttribute("contenteditable", true);
+  minutes.innerHTML = now.format("mm");
+  time.appendChild(minutes);
+  time.setAttribute("datetime", now.format());
+
+  [hours, minutes].forEach((e) =>
+    e.addEventListener("focus", () => {
+      globalThis.dispatchEvent(new StopTimeUpdateEvent());
+    })
+  );
+
+  let changedHour = false;
+  let changedMinute = false;
+  hours.addEventListener("input", () => (changedHour = true));
+  minutes.addEventListener("input", () => (changedMinute = true));
+  [hours, minutes].forEach((e) =>
+    e.addEventListener("blur", () => {
+      globalThis.dispatchEvent(
+        new StartTimeUpdateEvent(
+          changedHour ? parseInt(hours.innerHTML, 10) : -1,
+          changedMinute ? parseInt(minutes.innerHTML, 10) : -1
+        )
+      );
+    })
+  );
+
+  globalThis.addEventListener(TimeUpdatedEvent.eventId, (e) => {
+    const now = moment(e.now).utc().tz(zoneGroup[0].name);
+    hours.innerHTML = now.format("HH");
+    minutes.innerHTML = now.format("mm");
+    time.setAttribute("datetime", now.format());
+  });
+  return timeContainer;
+};
+
+const makeDate = (now) => {
+  const dateContainer = document.createElement("h2");
+  const dateElement = document.createElement("time");
+  dateElement.innerHTML = now.format("Do MMM");
+  dateElement.setAttribute("time", now.format());
+  dateContainer.appendChild(dateElement);
+
+  return dateContainer;
+};
+
 const displayTimeZone = (offset, zoneGroup, moment) => {
   const timeZoneContainer = document.createElement("section");
   timeZoneContainer.classList.add("timezone-container");
@@ -43,57 +103,12 @@ const displayTimeZone = (offset, zoneGroup, moment) => {
   const timeZoneWrapper = document.createElement("section");
   timeZoneWrapper.classList.add("timezone-wrapper");
 
-  const timeContainer = document.createElement("h1");
-  const time = document.createElement("time");
-  const now = moment.utc().tz(zoneGroup[0].name);
-  const h = document.createElement("span");
-  h.setAttribute("contenteditable", true);
-  h.innerHTML = now.format("HH");
-  time.appendChild(h);
-  const separator = document.createElement("wc-blink");
-  separator.innerHTML = ":";
-  time.appendChild(separator);
-  const m = document.createElement("span");
-  m.setAttribute("contenteditable", true);
-  m.innerHTML = now.format("mm");
-  time.appendChild(m);
-  time.setAttribute("datetime", now.format());
-  [h, m].forEach((e) =>
-    e.addEventListener("focus", () => {
-      globalThis.dispatchEvent(new StopTimeUpdateEvent());
-    })
-  );
-  let changedHour = false;
-  let changedMinute = false;
-  h.addEventListener("input", () => (changedHour = true));
-  m.addEventListener("input", () => (changedMinute = true));
-  [h, m].forEach((e) =>
-    e.addEventListener("blur", () => {
-      globalThis.dispatchEvent(
-        new StartTimeUpdateEvent(
-          changedHour ? parseInt(h.innerHTML, 10) : -1,
-          changedMinute ? parseInt(m.innerHTML, 10) : -1
-        )
-      );
-    })
-  );
-  timeContainer.appendChild(time);
-  timeZoneWrapper.appendChild(timeContainer);
+  const now = moment.utc().tz(zoneGroup.name);
+
+  timeZoneWrapper.appendChild(makeTime(moment, zoneGroup[0], now));
   timeZoneContainer.appendChild(timeZoneWrapper);
 
-  globalThis.addEventListener(TimeUpdatedEvent.eventId, (e) => {
-    const now = moment(e.now).utc().tz(zoneGroup[0].name);
-    h.innerHTML = now.format("HH");
-    m.innerHTML = now.format("mm");
-    time.setAttribute("datetime", now.format());
-  });
-
-  const dateContainer = document.createElement("h2");
-  const dateElement = document.createElement("time");
-  dateElement.innerHTML = now.format("Do MMM");
-  dateElement.setAttribute("time", now.format());
-  dateContainer.appendChild(dateElement);
-  timeZoneWrapper.appendChild(dateContainer);
+  timeZoneWrapper.appendChild(makeDate(now));
 
   for (const zoneInfo of zoneGroup) {
     const zoneInfoContainer = document.createElement("div");
