@@ -40,6 +40,9 @@ const displayTimeZone = (offset, zoneGroup, moment) => {
   const timeZoneContainer = document.createElement("section");
   timeZoneContainer.classList.add("timezone-container");
 
+  const timeZoneWrapper = document.createElement("section");
+  timeZoneWrapper.classList.add("timezone-wrapper");
+
   const timeContainer = document.createElement("h1");
   const time = document.createElement("time");
   const now = moment.utc().tz(zoneGroup[0].name);
@@ -49,7 +52,6 @@ const displayTimeZone = (offset, zoneGroup, moment) => {
   time.appendChild(h);
   const separator = document.createElement("wc-blink");
   separator.innerHTML = ":";
-  separator.classList.add("blink");
   time.appendChild(separator);
   const m = document.createElement("span");
   m.setAttribute("contenteditable", true);
@@ -76,7 +78,8 @@ const displayTimeZone = (offset, zoneGroup, moment) => {
     })
   );
   timeContainer.appendChild(time);
-  timeZoneContainer.appendChild(timeContainer);
+  timeZoneWrapper.appendChild(timeContainer);
+  timeZoneContainer.appendChild(timeZoneWrapper);
 
   globalThis.addEventListener(TimeUpdatedEvent.eventId, (e) => {
     const now = moment(e.now).utc().tz(zoneGroup[0].name);
@@ -85,10 +88,12 @@ const displayTimeZone = (offset, zoneGroup, moment) => {
     time.setAttribute("datetime", now.format());
   });
 
+  const dateContainer = document.createElement("h2");
   const dateElement = document.createElement("time");
-  dateElement.innerHTML = now.format("<br />dddd Do MMM yyyy");
+  dateElement.innerHTML = now.format("Do MMM");
   dateElement.setAttribute("time", now.format());
-  timeContainer.appendChild(dateElement);
+  dateContainer.appendChild(dateElement);
+  timeZoneWrapper.appendChild(dateContainer);
 
   for (const zoneInfo of zoneGroup) {
     const zoneInfoContainer = document.createElement("div");
@@ -111,12 +116,12 @@ const displayTimeZone = (offset, zoneGroup, moment) => {
     });
 
     zoneInfoContainer.appendChild(clear);
-    timeZoneContainer.appendChild(zoneInfoContainer);
+    timeZoneWrapper.appendChild(zoneInfoContainer);
   }
 
   const timeZoneOffset = document.createElement("div");
   timeZoneOffset.innerHTML = formatTimeZone(offset);
-  timeZoneContainer.appendChild(timeZoneOffset);
+  timeZoneWrapper.appendChild(timeZoneOffset);
 
   return timeZoneContainer;
 };
