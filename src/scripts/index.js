@@ -11,8 +11,18 @@
     StopTimeUpdateEvent,
     StartTimeUpdateEvent,
   } = await import("./customEvents.js");
-
   const { render } = await import("./createElement.js");
+
+  const renderTimeZoneList = async () => {
+    const main = document.getElementById("main");
+    const children = Array.prototype.slice.call(main.childNodes);
+    for (const child of children) {
+      main.removeChild(child);
+    }
+    const zones = await db.getItem("zones", []);
+    const zoneList = refreshTimeZoneList(zones, window.moment.utc());
+    render(zoneList, main);
+  };
 
   const addTimeZoneButton = document.getElementById("addTimeZone");
   const displayPicker = () => {
@@ -26,11 +36,7 @@
 
       await db.setItem("zones", knownZones.concat([zoneInfo]));
 
-      const zones = await db.getItem("zones", []);
-
-      const zoneList = refreshTimeZoneList(zones, window.moment.utc());
-
-      render(zoneList, document.getElementById("main"));
+      await renderTimeZoneList();
 
       removePicker();
     });
@@ -49,10 +55,7 @@
   };
   addTimeZoneButton.addEventListener("click", displayPicker);
 
-  const zones = await db.getItem("zones", []);
-  const zoneList = refreshTimeZoneList(zones, window.moment.utc());
-
-  render(zoneList, document.getElementById("main"));
+  await renderTimeZoneList();
 
   const startTime = () =>
     setInterval(() => {
@@ -86,12 +89,48 @@
     }
   );
 
-  globalThis.addEventListener(TimeZoneRefreshEvent.eventId, async () => {
-    const zones = await db.getItem("zones", []);
-    const zoneList = refreshTimeZoneList(zones, window.moment.utc());
-
-    render(zoneList, document.getElementById("main"));
-  });
+  globalThis.addEventListener(TimeZoneRefreshEvent.eventId, renderTimeZoneList);
 
   globalThis.dispatchEvent(new StartTimeUpdateEvent());
+
+  // this method is mostly a hack until we have a more "props-esq" way
+  // of cascading the values down.
+  globalThis.addEventListener(TimeUpdatedEvent.eventId, async (e) => {
+    const zones = await db.getItem("zones", []);
+
+    const zoneGroups = zones.reduce((groups, info) => {
+      if (!groups[info.offsetHours]) {
+        groups[info.offsetHours] = [];
+      }
+
+      groups[info.offsetHours].push(info);
+
+      return groups;
+    }, {});
+
+    let i = 1;
+    const zoneKeys = Object.keys(zoneGroups)
+      .map(Number)
+      .sort((a, b) => (a > b ? 1 : -1));
+    for (const zoneKey of zoneKeys) {
+      const zone = zoneGroups[zoneKey];
+      const hour = document.querySelector(
+        `.timezone-container:nth-child(${i}) h1 span:nth-child(1)`
+      );
+      const minute = document.querySelector(
+        `.timezone-container:nth-child(${i}) h1 span:nth-child(3)`
+      );
+
+      const now = e.now.utc().tz(zone[0].name);
+
+      hour.innerHTML = now.format("HH");
+      minute.innerHTML = now.format("mm");
+
+      const time = document.querySelector(
+        `.timezone-container:nth-child(${i}) h1 time`
+      );
+      time.setAttribute("datetime", now.format());
+      i++;
+    }
+  });
 })();

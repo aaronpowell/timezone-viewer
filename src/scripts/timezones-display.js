@@ -1,18 +1,9 @@
 import { formatTimeZone, shallowEqual } from "./utils.js";
 import * as db from "./db.js";
-import {
-  StartTimeUpdateEvent,
-  StopTimeUpdateEvent,
-  // TimeUpdatedEvent,
-} from "./customEvents.js";
+import { StartTimeUpdateEvent, StopTimeUpdateEvent } from "./customEvents.js";
 import { createElement } from "./createElement.js";
 
 const refreshTimeZoneList = (zones, now) => {
-  // const children = Array.prototype.slice.call(main.childNodes);
-  // for (const child of children) {
-  //   main.removeChild(child);
-  // }
-
   const zoneGroups = zones.reduce((groups, info) => {
     if (!groups[info.offsetHours]) {
       groups[info.offsetHours] = [];
@@ -35,19 +26,9 @@ const refreshTimeZoneList = (zones, now) => {
         return displayTimeZone(key, zoneGroup, now);
       })
   );
-
-  // globalThis.addEventListener(TimeUpdatedEvent.eventId, (e) => {
-  //   const now = moment(e.now).utc().tz(zoneGroup.name);
-  //   const hours = timeContainer.querySelector("span:nth-child(1)");
-  //   const minutes = timeContainer.querySelector("span:nth-child(3)");
-  //   const time = timeContainer.querySelector("time");
-  //   hours.innerHTML = now.format("HH");
-  //   minutes.innerHTML = now.format("mm");
-  //   time.setAttribute("datetime", now.format());
-  // });
 };
 
-const makeTime = (moment, zoneGroup, now) => {
+const makeTime = (now) => {
   let changedHour = false;
   let changedMinute = false;
 
@@ -148,7 +129,7 @@ const displayTimeZone = (offset, zoneGroup, utcNow) => {
       {
         className: "timezone-wrapper",
       },
-      makeTime(utcNow, zoneGroup[0], now),
+      makeTime(now),
       makeDate(now),
       ...zoneGroup.map(makeZoneInfo),
       createElement("div", null, formatTimeZone(offset))
