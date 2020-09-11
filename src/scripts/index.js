@@ -32,8 +32,7 @@
 
       await refreshTimeZoneListToDOM();
 
-      const header = document.querySelector("header");
-      header.removeChild(tzPicker);
+      removePicker();
     });
 
     document.querySelector("header").appendChild(tzPicker);

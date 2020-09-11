@@ -5,7 +5,6 @@ import {
   StopTimeUpdateEvent,
   TimeUpdatedEvent,
 } from "./customEvents.js";
-import "https://cdn.jsdelivr.net/gh/vanillawc/wc-blink@1/index.js";
 
 const refreshTimeZoneList = async (main, moment) => {
   const children = Array.prototype.slice.call(main.childNodes);
@@ -46,7 +45,8 @@ const makeTime = (moment, zoneGroup, now) => {
   hours.innerHTML = now.format("HH");
   time.appendChild(hours);
 
-  const separator = document.createElement("wc-blink");
+  const separator = document.createElement("span");
+  separator.classList.add("blink");
   separator.innerHTML = ":";
   time.appendChild(separator);
 
@@ -78,7 +78,7 @@ const makeTime = (moment, zoneGroup, now) => {
   );
 
   globalThis.addEventListener(TimeUpdatedEvent.eventId, (e) => {
-    const now = moment(e.now).utc().tz(zoneGroup[0].name);
+    const now = moment(e.now).utc().tz(zoneGroup.name);
     hours.innerHTML = now.format("HH");
     minutes.innerHTML = now.format("mm");
     time.setAttribute("datetime", now.format());
@@ -103,7 +103,7 @@ const displayTimeZone = (offset, zoneGroup, moment) => {
   const timeZoneWrapper = document.createElement("section");
   timeZoneWrapper.classList.add("timezone-wrapper");
 
-  const now = moment.utc().tz(zoneGroup.name);
+  const now = moment.utc().tz(zoneGroup[0].name);
 
   timeZoneWrapper.appendChild(makeTime(moment, zoneGroup[0], now));
   timeZoneContainer.appendChild(timeZoneWrapper);

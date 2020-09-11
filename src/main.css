@@ -72,3 +72,18 @@ header {
 #main .timezone-container time wc-blink {
   display: inline-block;
 }
+
+.blink {
+  animation: 2s linear infinite condemned_blink_effect;
+}
+@keyframes condemned_blink_effect {
+  0% {
+    visibility: hidden;
+  }
+  50% {
+    visibility: hidden;
+  }
+  100% {
+    visibility: visible;
+  }
+}
