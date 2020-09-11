@@ -12,11 +12,7 @@
     StartTimeUpdateEvent,
   } = await import("./customEvents.js");
 
-  const refreshTimeZoneListToDOM = refreshTimeZoneList.bind(
-    null,
-    document.getElementById("main"),
-    window.moment
-  );
+  const { render } = await import("./createElement.js");
 
   const addTimeZoneButton = document.getElementById("addTimeZone");
   const displayPicker = () => {
@@ -30,7 +26,11 @@
 
       await db.setItem("zones", knownZones.concat([zoneInfo]));
 
-      await refreshTimeZoneListToDOM();
+      const zones = await db.getItem("zones", []);
+
+      const zoneList = refreshTimeZoneList(zones, window.moment.utc());
+
+      render(zoneList, document.getElementById("main"));
 
       removePicker();
     });
@@ -49,7 +49,10 @@
   };
   addTimeZoneButton.addEventListener("click", displayPicker);
 
-  await refreshTimeZoneListToDOM();
+  const zones = await db.getItem("zones", []);
+  const zoneList = refreshTimeZoneList(zones, window.moment.utc());
+
+  render(zoneList, document.getElementById("main"));
 
   const startTime = () =>
     setInterval(() => {
@@ -83,10 +86,12 @@
     }
   );
 
-  globalThis.addEventListener(
-    TimeZoneRefreshEvent.eventId,
-    refreshTimeZoneListToDOM
-  );
+  globalThis.addEventListener(TimeZoneRefreshEvent.eventId, async () => {
+    const zones = await db.getItem("zones", []);
+    const zoneList = refreshTimeZoneList(zones, window.moment.utc());
+
+    render(zoneList, document.getElementById("main"));
+  });
 
   globalThis.dispatchEvent(new StartTimeUpdateEvent());
 })();

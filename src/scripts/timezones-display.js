@@ -5,15 +5,13 @@ import {
   StopTimeUpdateEvent,
   // TimeUpdatedEvent,
 } from "./customEvents.js";
-import { createElement, render } from "./createElement.js";
+import { createElement } from "./createElement.js";
 
-const refreshTimeZoneList = async (main, moment) => {
-  const children = Array.prototype.slice.call(main.childNodes);
-  for (const child of children) {
-    main.removeChild(child);
-  }
-
-  const zones = await db.getItem("zones", []);
+const refreshTimeZoneList = (zones, now) => {
+  // const children = Array.prototype.slice.call(main.childNodes);
+  // for (const child of children) {
+  //   main.removeChild(child);
+  // }
 
   const zoneGroups = zones.reduce((groups, info) => {
     if (!groups[info.offsetHours]) {
@@ -25,15 +23,18 @@ const refreshTimeZoneList = async (main, moment) => {
     return groups;
   }, {});
 
-  Object.keys(zoneGroups)
-    .map(Number)
-    .sort((a, b) => (a > b ? 1 : -1))
-    .map((key) => {
-      const zoneGroup = zoneGroups[key];
+  return createElement(
+    "",
+    null,
+    ...Object.keys(zoneGroups)
+      .map(Number)
+      .sort((a, b) => (a > b ? 1 : -1))
+      .map((key) => {
+        const zoneGroup = zoneGroups[key];
 
-      return displayTimeZone(key, zoneGroup, moment);
-    })
-    .forEach((el) => render(el, main));
+        return displayTimeZone(key, zoneGroup, now);
+      })
+  );
 
   // globalThis.addEventListener(TimeUpdatedEvent.eventId, (e) => {
   //   const now = moment(e.now).utc().tz(zoneGroup.name);
@@ -134,8 +135,8 @@ const makeZoneInfo = (zoneInfo) => {
   return zoneInfoContainer;
 };
 
-const displayTimeZone = (offset, zoneGroup, moment) => {
-  const now = moment.utc().tz(zoneGroup[0].name);
+const displayTimeZone = (offset, zoneGroup, utcNow) => {
+  const now = utcNow.tz(zoneGroup[0].name);
 
   const timeZoneContainer = createElement(
     "section",
@@ -147,7 +148,7 @@ const displayTimeZone = (offset, zoneGroup, moment) => {
       {
         className: "timezone-wrapper",
       },
-      makeTime(moment, zoneGroup[0], now),
+      makeTime(utcNow, zoneGroup[0], now),
       makeDate(now),
       ...zoneGroup.map(makeZoneInfo),
       createElement("div", null, formatTimeZone(offset))

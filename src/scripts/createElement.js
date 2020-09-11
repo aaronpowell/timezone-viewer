@@ -7,6 +7,11 @@ const render = (descriptor, renderTarget) => {
 
   if (type === "TEXT") {
     element = document.createTextNode(descriptor.children);
+    renderTarget.appendChild(element);
+  } else if (type === "NOOP") {
+    for (const child of descriptor.children) {
+      render(child, renderTarget);
+    }
   } else {
     element = document.createElement(descriptor.tag);
 
@@ -39,13 +44,13 @@ const render = (descriptor, renderTarget) => {
     for (const child of children) {
       render(child, element);
     }
+    renderTarget.appendChild(element);
   }
-  renderTarget.appendChild(element);
 };
 
 const createElement = (tag, properties, ...children) => {
   const descriptor = {
-    type: "ELEMENT",
+    type: tag === "" ? "NOOP" : "ELEMENT",
     tag: tag,
     properties,
     children: children.map((child) =>
