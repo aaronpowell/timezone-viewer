@@ -3,9 +3,9 @@ import * as db from "./db.js";
 import {
   StartTimeUpdateEvent,
   StopTimeUpdateEvent,
-  TimeUpdatedEvent,
+  // TimeUpdatedEvent,
 } from "./customEvents.js";
-import { createElement } from "./createElement.js";
+import { createElement, render } from "./createElement.js";
 
 const refreshTimeZoneList = async (main, moment) => {
   const children = Array.prototype.slice.call(main.childNodes);
@@ -33,7 +33,17 @@ const refreshTimeZoneList = async (main, moment) => {
 
       return displayTimeZone(key, zoneGroup, moment);
     })
-    .forEach((el) => main.appendChild(el));
+    .forEach((el) => render(el, main));
+
+  // globalThis.addEventListener(TimeUpdatedEvent.eventId, (e) => {
+  //   const now = moment(e.now).utc().tz(zoneGroup.name);
+  //   const hours = timeContainer.querySelector("span:nth-child(1)");
+  //   const minutes = timeContainer.querySelector("span:nth-child(3)");
+  //   const time = timeContainer.querySelector("time");
+  //   hours.innerHTML = now.format("HH");
+  //   minutes.innerHTML = now.format("mm");
+  //   time.setAttribute("datetime", now.format());
+  // });
 };
 
 const makeTime = (moment, zoneGroup, now) => {
@@ -82,15 +92,6 @@ const makeTime = (moment, zoneGroup, now) => {
     )
   );
 
-  globalThis.addEventListener(TimeUpdatedEvent.eventId, (e) => {
-    const now = moment(e.now).utc().tz(zoneGroup.name);
-    const hours = timeContainer.querySelector("span:nth-child(1)");
-    const minutes = timeContainer.querySelector("span:nth-child(3)");
-    const time = timeContainer.querySelector("time");
-    hours.innerHTML = now.format("HH");
-    minutes.innerHTML = now.format("mm");
-    time.setAttribute("datetime", now.format());
-  });
   return timeContainer;
 };
 
