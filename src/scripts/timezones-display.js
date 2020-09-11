@@ -5,6 +5,7 @@ import {
   StopTimeUpdateEvent,
   TimeUpdatedEvent,
 } from "./customEvents.js";
+import { createElement } from "./createElement.js";
 
 const refreshTimeZoneList = async (main, moment) => {
   const children = Array.prototype.slice.call(main.childNodes);
@@ -36,49 +37,56 @@ const refreshTimeZoneList = async (main, moment) => {
 };
 
 const makeTime = (moment, zoneGroup, now) => {
-  const timeContainer = document.createElement("h1");
-  const time = document.createElement("time");
-  timeContainer.appendChild(time);
-
-  const hours = document.createElement("span");
-  hours.setAttribute("contenteditable", true);
-  hours.innerHTML = now.format("HH");
-  time.appendChild(hours);
-
-  const separator = document.createElement("span");
-  separator.classList.add("blink");
-  separator.innerHTML = ":";
-  time.appendChild(separator);
-
-  const minutes = document.createElement("span");
-  minutes.setAttribute("contenteditable", true);
-  minutes.innerHTML = now.format("mm");
-  time.appendChild(minutes);
-  time.setAttribute("datetime", now.format());
-
-  [hours, minutes].forEach((e) =>
-    e.addEventListener("focus", () => {
-      globalThis.dispatchEvent(new StopTimeUpdateEvent());
-    })
-  );
-
   let changedHour = false;
   let changedMinute = false;
-  hours.addEventListener("input", () => (changedHour = true));
-  minutes.addEventListener("input", () => (changedMinute = true));
-  [hours, minutes].forEach((e) =>
-    e.addEventListener("blur", () => {
-      globalThis.dispatchEvent(
-        new StartTimeUpdateEvent(
-          changedHour ? parseInt(hours.innerHTML, 10) : -1,
-          changedMinute ? parseInt(minutes.innerHTML, 10) : -1
-        )
-      );
-    })
+
+  const timeContainer = createElement(
+    "h1",
+    null,
+    createElement(
+      "time",
+      { dateTime: now.format() },
+      createElement(
+        "span",
+        {
+          contentEditable: true,
+          onFocus: () => globalThis.dispatchEvent(new StopTimeUpdateEvent()),
+          onInput: () => (changedHour = true),
+          onBlur: (e) =>
+            globalThis.dispatchEvent(
+              new StartTimeUpdateEvent(
+                changedHour ? parseInt(e.target.innerHTML, 10) : -1,
+                -1
+              )
+            ),
+        },
+        now.format("HH")
+      ),
+      createElement("span", { className: "blink" }, ":"),
+      createElement(
+        "span",
+        {
+          contentEditable: true,
+          onFocus: () => globalThis.dispatchEvent(new StopTimeUpdateEvent()),
+          onInput: () => (changedMinute = true),
+          onBlur: (e) =>
+            globalThis.dispatchEvent(
+              new StartTimeUpdateEvent(
+                -1,
+                changedMinute ? parseInt(e.target.innerHTML, 10) : -1
+              )
+            ),
+        },
+        now.format("mm")
+      )
+    )
   );
 
   globalThis.addEventListener(TimeUpdatedEvent.eventId, (e) => {
     const now = moment(e.now).utc().tz(zoneGroup.name);
+    const hours = timeContainer.querySelector("span:nth-child(1)");
+    const minutes = timeContainer.querySelector("span:nth-child(3)");
+    const time = timeContainer.querySelector("time");
     hours.innerHTML = now.format("HH");
     minutes.innerHTML = now.format("mm");
     time.setAttribute("datetime", now.format());
@@ -87,56 +95,63 @@ const makeTime = (moment, zoneGroup, now) => {
 };
 
 const makeDate = (now) => {
-  const dateContainer = document.createElement("h2");
-  const dateElement = document.createElement("time");
-  dateElement.innerHTML = now.format("Do MMM");
-  dateElement.setAttribute("time", now.format());
-  dateContainer.appendChild(dateElement);
+  const dateContainer = createElement(
+    "h2",
+    null,
+    createElement("time", { time: now.format() }, now.format("Do MMM"))
+  );
 
   return dateContainer;
 };
 
+const makeZoneInfo = (zoneInfo) => {
+  const zoneInfoContainer = createElement(
+    "div",
+    { className: "timezone-info" },
+    zoneInfo.name,
+    createElement(
+      "span",
+      {
+        className: "remove",
+        onClick: async () => {
+          const knownZones = await db.getItem("zones");
+
+          const index = knownZones.findIndex((tz) =>
+            shallowEqual(zoneInfo, tz)
+          );
+          const newZones = knownZones
+            .slice(0, index)
+            .concat(knownZones.splice(index + 1));
+
+          await db.setItem("zones", newZones);
+          globalThis.dispatchEvent(new TimeZoneRefreshEvent());
+        },
+      },
+      "❌"
+    )
+  );
+  return zoneInfoContainer;
+};
+
 const displayTimeZone = (offset, zoneGroup, moment) => {
-  const timeZoneContainer = document.createElement("section");
-  timeZoneContainer.classList.add("timezone-container");
-
-  const timeZoneWrapper = document.createElement("section");
-  timeZoneWrapper.classList.add("timezone-wrapper");
-
   const now = moment.utc().tz(zoneGroup[0].name);
 
-  timeZoneWrapper.appendChild(makeTime(moment, zoneGroup[0], now));
-  timeZoneContainer.appendChild(timeZoneWrapper);
-
-  timeZoneWrapper.appendChild(makeDate(now));
-
-  for (const zoneInfo of zoneGroup) {
-    const zoneInfoContainer = document.createElement("div");
-    zoneInfoContainer.classList.add("timezone-info");
-    zoneInfoContainer.innerHTML = zoneInfo.name;
-
-    const clear = document.createElement("span");
-    clear.innerHTML = "❌";
-    clear.classList.add("remove");
-    clear.addEventListener("click", async () => {
-      const knownZones = await db.getItem("zones");
-
-      const index = knownZones.findIndex((tz) => shallowEqual(zoneInfo, tz));
-      const newZones = knownZones
-        .slice(0, index)
-        .concat(knownZones.splice(index + 1));
-
-      await db.setItem("zones", newZones);
-      globalThis.dispatchEvent(new TimeZoneRefreshEvent());
-    });
-
-    zoneInfoContainer.appendChild(clear);
-    timeZoneWrapper.appendChild(zoneInfoContainer);
-  }
-
-  const timeZoneOffset = document.createElement("div");
-  timeZoneOffset.innerHTML = formatTimeZone(offset);
-  timeZoneWrapper.appendChild(timeZoneOffset);
+  const timeZoneContainer = createElement(
+    "section",
+    {
+      className: "timezone-container",
+    },
+    createElement(
+      "section",
+      {
+        className: "timezone-wrapper",
+      },
+      makeTime(moment, zoneGroup[0], now),
+      makeDate(now),
+      ...zoneGroup.map(makeZoneInfo),
+      createElement("div", null, formatTimeZone(offset))
+    )
+  );
 
   return timeZoneContainer;
 };
