@@ -44,7 +44,10 @@ const createDom = ({ type, tag, props }) => {
 };
 
 const commitRoot = () => {
+  deletions.forEach(commitWork);
   commitWork(wipRoot.child);
+  currentRoot = wipRoot;
+  deletions = [];
   wipRoot = null;
 };
 
@@ -53,20 +56,81 @@ const commitWork = (currentUnitOfWork) => {
     return;
   }
 
-  const parent = currentUnitOfWork.parent.dom;
-  parent.appendChild(currentUnitOfWork.dom);
+  const { operation } = currentUnitOfWork;
+  if (operation === "DELETE") {
+    currentUnitOfWork.parent.dom.removeChild(currentUnitOfWork.dom);
+  } else if (operation === "INSERT") {
+    const parent = currentUnitOfWork.parent.dom;
+    parent.appendChild(currentUnitOfWork.dom);
+  } else if (operation === "UPDATE") {
+    // TODO: update current element with new props
+  } else {
+    throw `Operation ${operation} is not supported`;
+  }
+
   commitWork(currentUnitOfWork.child);
   commitWork(currentUnitOfWork.sibling);
 };
 
 let wipRoot = null;
+let currentRoot = null;
+let deletions = null;
 const render = (element, renderTarget) => {
   wipRoot = {
     dom: renderTarget,
     children: [element],
+    prev: currentRoot,
   };
 
+  deletions = [];
   nextUnitOfWork = wipRoot;
+};
+
+const reconcileChild = (wipUnitOfWork, children) => {
+  let index = 0;
+  let prevSibling = null;
+  let oldUnitOfWork = wipUnitOfWork.prev && wipUnitOfWork.prev.child;
+  while (index < children.length || oldUnitOfWork !== null) {
+    const child = children[index];
+
+    const sameType =
+      oldUnitOfWork && child && child.type === oldUnitOfWork.type;
+
+    let newUnitOfWork = null;
+
+    if (sameType) {
+      newUnitOfWork = {
+        ...oldUnitOfWork,
+        props: child.props,
+        children: child.children,
+        prev: oldUnitOfWork,
+        operation: "UPDATE",
+        parent: wipUnitOfWork,
+      };
+    }
+    if (child && !sameType) {
+      newUnitOfWork = {
+        ...child,
+        parent: wipUnitOfWork,
+        dom: null,
+        prev: null,
+        operation: "INSERT",
+      };
+    }
+    if (oldUnitOfWork && !sameType) {
+      oldUnitOfWork.operation = "DELETE";
+      deletions.push(oldUnitOfWork);
+    }
+
+    if (index === 0) {
+      wipUnitOfWork.child = newUnitOfWork;
+    } else {
+      prevSibling.sibling = newUnitOfWork;
+    }
+
+    prevSibling = newUnitOfWork;
+    index++;
+  }
 };
 
 const performUnitOfWork = (currentUnitOfWork) => {
@@ -75,25 +139,7 @@ const performUnitOfWork = (currentUnitOfWork) => {
   }
 
   const children = currentUnitOfWork.children;
-  let index = 0;
-  let prevSibling = null;
-  while (index < children.length) {
-    const child = children[index];
-    const uow = {
-      ...child,
-      parent: currentUnitOfWork,
-      dom: null,
-    };
-
-    if (index === 0) {
-      currentUnitOfWork.child = uow;
-    } else {
-      prevSibling.sibling = uow;
-    }
-
-    prevSibling = uow;
-    index++;
-  }
+  reconcileChild(currentUnitOfWork, children);
 
   if (currentUnitOfWork.child) {
     return currentUnitOfWork.child;
