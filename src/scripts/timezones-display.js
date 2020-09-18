@@ -16,7 +16,7 @@ const refreshTimeZoneList = (zones, now) => {
 
   return createElement(
     "",
-    null,
+    {},
     ...Object.keys(zoneGroups)
       .map(Number)
       .sort((a, b) => (a > b ? 1 : -1))
@@ -34,7 +34,7 @@ const makeTime = (now) => {
 
   const timeContainer = createElement(
     "h1",
-    null,
+    {},
     createElement(
       "time",
       { dateTime: now.format() },
@@ -80,7 +80,7 @@ const makeTime = (now) => {
 const makeDate = (now) => {
   const dateContainer = createElement(
     "h2",
-    null,
+    {},
     createElement("time", { time: now.format() }, now.format("Do MMM"))
   );
 
@@ -132,7 +132,7 @@ const displayTimeZone = (offset, zoneGroup, utcNow) => {
       makeTime(now),
       makeDate(now),
       ...zoneGroup.map(makeZoneInfo),
-      createElement("div", null, formatTimeZone(offset))
+      createElement("div", {}, formatTimeZone(offset))
     )
   );
 
