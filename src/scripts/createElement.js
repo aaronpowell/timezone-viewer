@@ -25,6 +25,8 @@ const render = (descriptor, renderTarget) => {
       for (const key of keys) {
         if (key === "className") {
           element.className = properties[key];
+        } else if (typeof properties[key] === "boolean") {
+          element[key] = properties[key];
         } else {
           element.setAttribute(key.toLowerCase(), properties[key]);
         }

@@ -26,8 +26,8 @@
 
   const addTimeZoneButton = document.getElementById("addTimeZone");
   const displayPicker = () => {
-    const tzPicker = createPicker(window.moment, document);
-    tzPicker.addEventListener("zoneSelected", async ({ zoneInfo }) => {
+    const tzPicker = createPicker(window.moment);
+    globalThis.addEventListener("zoneSelected", async ({ zoneInfo }) => {
       const knownZones = await db.getItem("zones", []);
 
       if (knownZones.find((tz) => tz.name === zoneInfo.name)) {
@@ -41,7 +41,7 @@
       removePicker();
     });
 
-    document.querySelector("header").appendChild(tzPicker);
+    render(tzPicker, document.querySelector("header"));
     addTimeZoneButton.removeEventListener("click", displayPicker);
     addTimeZoneButton.addEventListener("click", removePicker);
     addTimeZoneButton.innerHTML = "Remove Timezone Picker";

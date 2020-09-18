@@ -1,12 +1,10 @@
 "use strict";
 import { formatTimeZone } from "./utils.js";
+import { createElement } from "./createElement.js";
 
-const createPicker = (moment, document) => {
+const createPicker = (moment) => {
   const zoneNames = moment.tz.names();
   const zoneInfos = zoneNames.map((name) => moment.tz.zone(name));
-
-  const select = document.createElement("select");
-  select.setAttribute("id", "timezone-picker");
 
   const guess = moment.tz.guess();
 
@@ -31,39 +29,45 @@ const createPicker = (moment, document) => {
       return groups;
     }, {});
 
-  Object.keys(groups)
-    .map(Number)
-    .sort((a, b) => (a > b ? 1 : -1))
-    .map((groupKey) => {
-      const optGroup = document.createElement("optgroup");
-      const group = groups[groupKey];
-      optGroup.setAttribute(
-        "label",
-        `UTC ${formatTimeZone(group[0].offsetHours)}`
-      );
-      group
-        .sort((a, b) => (a.name > b.name ? 1 : -1))
-        .map((info) => {
-          const option = document.createElement("option");
-          option.dataset.zoneInfo = JSON.stringify(info);
-          option.innerHTML = info.name;
-
-          if (info.name === guess) {
-            option.selected = true;
-          }
-
-          optGroup.appendChild(option);
-        });
-      select.appendChild(optGroup);
-    });
-
-  select.addEventListener("change", ({ target }) => {
-    select.dispatchEvent(
-      new ZoneSelectEvent(
-        JSON.parse(target.selectedOptions[0].dataset.zoneInfo)
-      )
-    );
-  });
+  const select = createElement(
+    "select",
+    {
+      id: "timezone-picker",
+      onChange: ({ target }) => {
+        globalThis.dispatchEvent(
+          new ZoneSelectEvent(
+            JSON.parse(target.selectedOptions[0].dataset.zoneInfo)
+          )
+        );
+      },
+    },
+    ...Object.keys(groups)
+      .map(Number)
+      .sort((a, b) => (a > b ? 1 : -1))
+      .map((groupKey) => {
+        const group = groups[groupKey];
+        const optGroup = createElement(
+          "optgroup",
+          {
+            label: `UTC ${formatTimeZone(group[0].offsetHours)}`,
+          },
+          ...group
+            .sort((a, b) => (a.name > b.name ? 1 : -1))
+            .map((info) => {
+              const option = createElement(
+                "option",
+                {
+                  "data-zone-info": JSON.stringify(info),
+                  selected: info.name === guess,
+                },
+                info.name
+              );
+              return option;
+            })
+        );
+        return optGroup;
+      })
+  );
 
   return select;
 };
