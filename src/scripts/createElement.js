@@ -1,47 +1,30 @@
 const eventRegex = /^on/;
 
-const render = (descriptor, renderTarget) => {
-  const { type } = descriptor;
-
+const render = ({ type, tag, props, children }, renderTarget) => {
   let element;
 
-  if (type === "TEXT") {
-    element = document.createTextNode(descriptor.children);
-    renderTarget.appendChild(element);
-  } else if (type === "NOOP") {
-    for (const child of descriptor.children) {
+  if (type === "NOOP") {
+    for (const child of children) {
       render(child, renderTarget);
     }
   } else {
-    element = document.createElement(descriptor.tag);
+    element =
+      type === "TEXT"
+        ? document.createTextNode("")
+        : document.createElement(tag);
 
-    const { properties, children } = descriptor;
+    Object.keys(props)
+      .filter((key) => !key.startsWith("on"))
+      .forEach((key) => (element[key] = props[key]));
 
-    if (properties) {
-      const keys = Object.keys(properties).filter(
-        (key) => !key.startsWith("on")
-      );
-
-      for (const key of keys) {
-        if (key === "className") {
-          element.className = properties[key];
-        } else if (typeof properties[key] === "boolean") {
-          element[key] = properties[key];
-        } else {
-          element.setAttribute(key.toLowerCase(), properties[key]);
-        }
-      }
-
-      const events = Object.keys(properties).filter((key) =>
-        eventRegex.test(key)
-      );
-      for (const event of events) {
+    Object.keys(props)
+      .filter((key) => eventRegex.test(key))
+      .forEach((event) =>
         element.addEventListener(
           event.replace(eventRegex, "").toLowerCase(),
-          properties[event]
-        );
-      }
-    }
+          props[event]
+        )
+      );
 
     for (const child of children) {
       render(child, element);
@@ -50,13 +33,23 @@ const render = (descriptor, renderTarget) => {
   }
 };
 
-const createElement = (tag, properties, ...children) => {
+const createTextElement = (text) => {
+  return {
+    type: "TEXT",
+    props: {
+      nodeValue: text,
+    },
+    children: [],
+  };
+};
+
+const createElement = (tag, props, ...children) => {
   const descriptor = {
-    type: tag === "" ? "NOOP" : "ELEMENT",
+    type: !tag ? "NOOP" : "ELEMENT",
     tag: tag,
-    properties,
+    props: props,
     children: children.map((child) =>
-      typeof child === "object" ? child : { type: "TEXT", children: child }
+      typeof child === "object" ? child : createTextElement(child)
     ),
   };
 
