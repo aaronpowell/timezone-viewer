@@ -15,7 +15,7 @@ const refreshTimeZoneList = (zones, now) => {
   }, {});
 
   return createElement(
-    "",
+    "div",
     {},
     ...Object.keys(zoneGroups)
       .map(Number)
