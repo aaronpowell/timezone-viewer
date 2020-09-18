@@ -1,32 +1,5 @@
 const eventRegex = /^on/;
 
-const createDom = ({ type, tag, props }) => {
-  const element =
-    type === "TEXT" ? document.createTextNode("") : document.createElement(tag);
-
-  Object.keys(props)
-    .filter((key) => !key.startsWith("on"))
-    .forEach((key) => (element[key] = props[key]));
-
-  Object.keys(props)
-    .filter((key) => eventRegex.test(key))
-    .forEach((event) =>
-      element.addEventListener(
-        event.replace(eventRegex, "").toLowerCase(),
-        props[event]
-      )
-    );
-
-  return element;
-};
-
-const render = (element, renderTarget) => {
-  nextUnitOfWork = {
-    dom: renderTarget,
-    children: [element],
-  };
-};
-
 const createTextElement = (text) => {
   return {
     type: "TEXT",
@@ -50,13 +23,55 @@ const createElement = (tag, props, ...children) => {
   return descriptor;
 };
 
+const createDom = ({ type, tag, props }) => {
+  const element =
+    type === "TEXT" ? document.createTextNode("") : document.createElement(tag);
+
+  Object.keys(props)
+    .filter((key) => !key.startsWith("on"))
+    .forEach((key) => (element[key] = props[key]));
+
+  Object.keys(props)
+    .filter((key) => eventRegex.test(key))
+    .forEach((event) =>
+      element.addEventListener(
+        event.replace(eventRegex, "").toLowerCase(),
+        props[event]
+      )
+    );
+
+  return element;
+};
+
+const commitRoot = () => {
+  commitWork(wipRoot.child);
+  wipRoot = null;
+};
+
+const commitWork = (currentUnitOfWork) => {
+  if (!currentUnitOfWork) {
+    return;
+  }
+
+  const parent = currentUnitOfWork.parent.dom;
+  parent.appendChild(currentUnitOfWork.dom);
+  commitWork(currentUnitOfWork.child);
+  commitWork(currentUnitOfWork.sibling);
+};
+
+let wipRoot = null;
+const render = (element, renderTarget) => {
+  wipRoot = {
+    dom: renderTarget,
+    children: [element],
+  };
+
+  nextUnitOfWork = wipRoot;
+};
+
 const performUnitOfWork = (currentUnitOfWork) => {
   if (!currentUnitOfWork.dom) {
     currentUnitOfWork.dom = createDom(currentUnitOfWork);
-  }
-
-  if (currentUnitOfWork.parent) {
-    currentUnitOfWork.parent.dom.appendChild(currentUnitOfWork.dom);
   }
 
   const children = currentUnitOfWork.children;
@@ -101,6 +116,11 @@ const workLoop = (deadline) => {
 
     shouldStopWork = deadline.timeRemaining() < 1;
   }
+
+  if (!nextUnitOfWork && wipRoot) {
+    commitRoot();
+  }
+
   requestIdleCallback(workLoop);
 };
 requestIdleCallback(workLoop);
