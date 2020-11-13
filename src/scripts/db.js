@@ -9,7 +9,9 @@ const setItem = (key, value) => {
 
 const getItem = (key, defaultValue = undefined) => {
   const item = storage.getItem(key) || defaultValue;
-  return Promise.resolve(typeof item === typeof "" ? JSON.parse(item) : item);
+  return new Promise((resolve) =>
+    resolve(typeof item === typeof "" ? JSON.parse(item) : item)
+  );
 };
 
 export { setItem, getItem };

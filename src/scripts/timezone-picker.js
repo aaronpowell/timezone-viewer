@@ -1,17 +1,12 @@
 "use strict";
+import { React } from "./global.js";
 import { formatTimeZone } from "./utils.js";
-import { createElement } from "./createElement.js";
 
-const createPicker = (moment) => {
-  const zoneNames = moment.tz.names();
-  const zoneInfos = zoneNames.map((name) => moment.tz.zone(name));
-
-  const guess = moment.tz.guess();
-
+const createPicker = ({ zoneInfos, guess, zoneSelected }) => {
   const groups = zoneInfos
     .map((info) => {
-      const offset = info.utcOffset(moment());
-      const offsetHours = (offset / 60) * -1;
+      const offset = info.rawOffsetInMinutes;
+      const offsetHours = offset / 60;
 
       return {
         name: info.name,
@@ -29,16 +24,12 @@ const createPicker = (moment) => {
       return groups;
     }, {});
 
-  const select = createElement(
+  const select = React.createElement(
     "select",
     {
       id: "timezone-picker",
       onChange: ({ target }) => {
-        globalThis.dispatchEvent(
-          new ZoneSelectEvent(
-            JSON.parse(target.selectedOptions[0].dataset.zoneInfo)
-          )
-        );
+        zoneSelected(JSON.parse(target.selectedOptions[0].dataset.zoneInfo));
       },
     },
     ...Object.keys(groups)
@@ -46,7 +37,7 @@ const createPicker = (moment) => {
       .sort((a, b) => (a > b ? 1 : -1))
       .map((groupKey) => {
         const group = groups[groupKey];
-        const optGroup = createElement(
+        const optGroup = React.createElement(
           "optgroup",
           {
             label: `UTC ${formatTimeZone(group[0].offsetHours)}`,
@@ -54,7 +45,7 @@ const createPicker = (moment) => {
           ...group
             .sort((a, b) => (a.name > b.name ? 1 : -1))
             .map((info) => {
-              const option = createElement(
+              const option = React.createElement(
                 "option",
                 {
                   "data-zone-info": JSON.stringify(info),

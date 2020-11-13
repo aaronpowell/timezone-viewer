@@ -1,9 +1,8 @@
-import { formatTimeZone, shallowEqual } from "./utils.js";
 import * as db from "./db.js";
-import { StartTimeUpdateEvent, StopTimeUpdateEvent } from "./customEvents.js";
-import { createElement } from "./createElement.js";
+import { React } from "./global.js";
+import { formatTimeZone, shallowEqual } from "./utils.js";
 
-const refreshTimeZoneList = (zones, now) => {
+const TimeZoneList = ({ zones, now, startTime, stopTime }) => {
   const zoneGroups = zones.reduce((groups, info) => {
     if (!groups[info.offsetHours]) {
       groups[info.offsetHours] = [];
@@ -14,85 +13,84 @@ const refreshTimeZoneList = (zones, now) => {
     return groups;
   }, {});
 
-  return createElement(
+  return React.createElement(
     "div",
     {},
     ...Object.keys(zoneGroups)
       .map(Number)
       .sort((a, b) => (a > b ? 1 : -1))
-      .map((key) => {
-        const zoneGroup = zoneGroups[key];
+      .map((offset) => {
+        const zoneGroup = zoneGroups[offset];
 
-        return displayTimeZone(key, zoneGroup, now);
+        return React.createElement(TimeZone, {
+          offset,
+          zoneGroup,
+          now,
+          startTime,
+          stopTime,
+        });
       })
   );
 };
 
-const makeTime = (now) => {
-  let changedHour = false;
-  let changedMinute = false;
+const Time = ({ now, startTime, stopTime }) => {
+  const [hour, setHour] = React.useState(now.toFormat("HH"));
+  const [minute, setMinute] = React.useState(now.toFormat("mm"));
 
-  const timeContainer = createElement(
+  React.useEffect(() => {
+    setHour(now.toFormat("HH"));
+    setMinute(now.toFormat("mm"));
+  }, [now]);
+
+  const timeContainer = React.createElement(
     "h1",
     {},
-    createElement(
+    React.createElement(
       "time",
-      { dateTime: now.format() },
-      createElement(
-        "span",
-        {
-          contentEditable: true,
-          onFocus: () => globalThis.dispatchEvent(new StopTimeUpdateEvent()),
-          onInput: () => (changedHour = true),
-          onBlur: (e) =>
-            globalThis.dispatchEvent(
-              new StartTimeUpdateEvent(
-                changedHour ? parseInt(e.target.innerHTML, 10) : -1,
-                -1
-              )
-            ),
+      { dateTime: now.toString() },
+      React.createElement("input", {
+        type: "text",
+        value: hour,
+        onFocus: () => stopTime(),
+        onChange: (e) => setHour(e.target.value),
+        onBlur: () => {
+          startTime(now.set({ hour, minute }));
         },
-        now.format("HH")
-      ),
-      createElement("span", { className: "blink" }, ":"),
-      createElement(
-        "span",
-        {
-          contentEditable: true,
-          onFocus: () => globalThis.dispatchEvent(new StopTimeUpdateEvent()),
-          onInput: () => (changedMinute = true),
-          onBlur: (e) =>
-            globalThis.dispatchEvent(
-              new StartTimeUpdateEvent(
-                -1,
-                changedMinute ? parseInt(e.target.innerHTML, 10) : -1
-              )
-            ),
-        },
-        now.format("mm")
-      )
+      }),
+      React.createElement("span", { className: "blink" }, ":"),
+      React.createElement("input", {
+        type: "text",
+        value: minute,
+        onFocus: () => stopTime(),
+        onChange: (e) => setMinute(e.target.value),
+        onBlur: () => startTime(now.set({ hour, minute })),
+      })
     )
   );
 
   return timeContainer;
 };
 
-const makeDate = (now) => {
-  const dateContainer = createElement(
+const Date = ({ now }) => {
+  const dateContainer = React.createElement(
     "h2",
     {},
-    createElement("time", { time: now.format() }, now.format("Do MMM"))
+    React.createElement(
+      "time",
+      { dateTime: now.toString() },
+      now.toFormat("ccc, MMM d")
+    )
   );
 
   return dateContainer;
 };
 
 const makeZoneInfo = (zoneInfo) => {
-  const zoneInfoContainer = createElement(
+  const zoneInfoContainer = React.createElement(
     "div",
     { className: "timezone-info" },
     zoneInfo.name,
-    createElement(
+    React.createElement(
       "span",
       {
         className: "remove",
@@ -116,23 +114,23 @@ const makeZoneInfo = (zoneInfo) => {
   return zoneInfoContainer;
 };
 
-const displayTimeZone = (offset, zoneGroup, utcNow) => {
-  const now = utcNow.tz(zoneGroup[0].name);
+const TimeZone = ({ offset, zoneGroup, now, startTime, stopTime }) => {
+  const localNow = now.setZone(zoneGroup[0].name);
 
-  const timeZoneContainer = createElement(
+  const timeZoneContainer = React.createElement(
     "section",
     {
       className: "timezone-container",
     },
-    createElement(
+    React.createElement(
       "section",
       {
         className: "timezone-wrapper",
       },
-      makeTime(now),
-      makeDate(now),
+      React.createElement(Time, { now: localNow, startTime, stopTime }),
+      React.createElement(Date, { now: localNow }),
       ...zoneGroup.map(makeZoneInfo),
-      createElement("div", {}, formatTimeZone(offset))
+      React.createElement("div", {}, formatTimeZone(offset))
     )
   );
 
@@ -148,4 +146,4 @@ class TimeZoneRefreshEvent extends Event {
   }
 }
 
-export { refreshTimeZoneList, TimeZoneRefreshEvent };
+export { TimeZoneRefreshEvent, TimeZoneList };

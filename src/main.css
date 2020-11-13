@@ -38,6 +38,14 @@ header {
   padding: 0px;
 }
 
+#main .timezone-container h1 input {
+  font-size: 5rem;
+  width: 100px;
+  text-align: center;
+  border: none;
+  background-color: transparent;
+}
+
 #main .timezone-container h2 {
   font-size: 3rem;
   margin: 0px;
